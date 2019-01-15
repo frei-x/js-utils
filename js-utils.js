@@ -117,6 +117,39 @@
     }
     this._eventPublicCheckArgType.call(this, eventName, funAddon);
   }
+
+  /**
+   * @description web worker,无需外部文件
+   * 试了很多办法都无法直接将计算结果返回到最外层函数(vm.worker),只能用回调函数了
+   * @date 2019-01-15
+   * @param {Function} fun 需要worker异步加速计算的程序
+   * @param {*} param
+   * @param {Function} [success=function () { }]  成功的回调
+   */
+  vm.worker = function* (fun, param, success = function () { }) {
+    let blob = new Blob([fun], { type: 'text/plain' });
+    let worker = new Worker(window.URL.createObjectURL(blob));
+    postMessage(1);
+    var v = 0;
+    yield worker.onmessage = function* aaa(e) {
+      success(e);
+      setTimeout(() => {
+        console.log(e);
+      }, 3000);
+      worker.terminate();
+      v = e;
+      yield e;
+    }
+    //worker.onmessage = aaa; 
+  }
+  console.log(vm.worker(`
+    postMessage(1);
+    onmessage=function(e){
+      
+    }
+  `, [1], function (r) {
+      console.log(r)
+    }).next().value)
   window.vm = vm;
 })();
 export default vm;
